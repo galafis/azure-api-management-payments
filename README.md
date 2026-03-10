@@ -1,89 +1,130 @@
-# API de Pagamentos Segura com Azure API Management
+# Payment Processing System with Azure API Management / Sistema de Processamento de Pagamentos com Azure API Management
 
-## Sobre o Projeto
+## English
 
-Este projeto foi desenvolvido como parte do bootcamp **Microsoft Azure Cloud Native 2026** da DIO. O objetivo e demonstrar a criacao de uma API de pagamentos segura utilizando o Azure API Management como camada de gerenciamento, seguranca e monitoramento.
+### About the Project
 
-## Arquitetura da Solucao
+A comprehensive payment processing system designed for integration with Azure API Management. Supports multiple payment methods (credit card, PIX, boleto), handles the full transaction lifecycle including refunds and cancellations, implements idempotency for safe retries, and provides webhook notifications for status changes.
+
+### Architecture
 
 ```
-Cliente -> Azure API Management -> Azure App Service (API Backend)
-                |
-                +-- Politicas de Seguranca (JWT, Rate Limiting)
-                +-- Subscricao e Chaves de API
-                +-- Monitoramento e Logs
+azure-api-management-payments/
+|-- src/
+|   |-- payments/
+|   |   |-- models.py         # Transaction, PaymentMethod, Refund dataclasses
+|   |   |-- processor.py      # Payment processing engine
+|   |   |-- idempotency.py    # Idempotency key store
+|   |-- webhooks/
+|   |   |-- notifier.py       # Webhook notification system
+|-- tests/
+|   |-- test_payments.py      # 25+ unit tests
+|-- main.py                   # Demo script
+|-- requirements.txt
+|-- .gitignore
+|-- README.md
 ```
 
-## Componentes Utilizados
+### Key Features
 
-| Componente | Funcao |
+- **Multi-Method Payments**: Credit card, debit card, PIX (instant), and boleto (bank slip)
+- **Transaction Lifecycle**: Create, approve, decline, cancel, refund (full and partial)
+- **Idempotency**: Prevent duplicate processing with TTL-based key store
+- **Webhook Notifications**: Register endpoints, subscribe to events, track deliveries
+- **Payment Method Management**: Register, deactivate, and list payment methods
+- **Refund Tracking**: Full and partial refunds with balance validation
+- **Status Management**: Comprehensive status flow (pending, processing, approved, declined, cancelled, refunded)
+
+### Supported Payment Methods
+
+| Method | Behavior |
 |---|---|
-| Azure API Management | Gateway de API, proxy reverso, gerenciamento de politicas |
-| Azure App Service | Hospedagem da API backend de pagamentos |
-| JWT Authentication | Autenticacao baseada em tokens |
-| Subscription Keys | Controle de acesso via Ocp-Apim-Subscription-Key |
+| Credit Card | Instant approval with limit validation |
+| Debit Card | Instant approval with limit validation |
+| PIX | Instant approval |
+| Boleto | Remains pending until confirmed |
 
-## Funcionalidades
+### How to Run
 
-- **Gateway de API**: Proxy reverso entre clientes e servicos backend
-- **Politicas XML**: Rate limiting, cache, transformacao de requests/responses
-- **Autenticacao JWT**: Validacao de tokens para protecao dos endpoints
-- **Subscricoes**: Gerenciamento de chaves de API para desenvolvedores
-- **Portal do Desenvolvedor**: Interface para teste e assinatura de produtos
-- **Certificados**: Protecao adicional via certificados de cliente
+```bash
+# Clone the repository
+git clone https://github.com/galafis/azure-api-management-payments.git
+cd azure-api-management-payments
 
-## Endpoints da API
+# Install dependencies
+pip install -r requirements.txt
 
-```
-GET    /api/payments          - Lista pagamentos
-POST   /api/payments          - Cria novo pagamento
-GET    /api/payments/{id}     - Consulta pagamento por ID
-PUT    /api/payments/{id}     - Atualiza pagamento
-DELETE /api/payments/{id}     - Remove pagamento
+# Run the demo
+python main.py
+
+# Run tests
+pytest tests/ -v
 ```
 
-## Politicas de Seguranca Implementadas
+### Technologies
 
-```xml
-<policies>
-  <inbound>
-    <rate-limit calls="100" renewal-period="60" />
-    <validate-jwt header-name="Authorization">
-      <issuer-signing-keys>
-        <key>{{jwt-signing-key}}</key>
-      </issuer-signing-keys>
-    </validate-jwt>
-    <set-header name="X-Request-ID" exists-action="skip">
-      <value>@(Guid.NewGuid().ToString())</value>
-    </set-header>
-  </inbound>
-</policies>
+| Technology | Purpose |
+|---|---|
+| Python 3.10+ | Core language |
+| pytest | Testing framework |
+| dataclasses | Data models |
+| enum | Status and type enumerations |
+
+---
+
+## Portugues
+
+### Sobre o Projeto
+
+Sistema completo de processamento de pagamentos projetado para integracao com Azure API Management. Suporta multiplos metodos de pagamento (cartao de credito, PIX, boleto), gerencia o ciclo completo de transacoes incluindo estornos e cancelamentos, implementa idempotencia para retentativas seguras e fornece notificacoes webhook para mudancas de status.
+
+### Funcionalidades Principais
+
+- **Pagamentos Multi-Metodo**: Cartao de credito, debito, PIX (instantaneo) e boleto bancario
+- **Ciclo de Vida da Transacao**: Criar, aprovar, recusar, cancelar, estornar (total e parcial)
+- **Idempotencia**: Prevencao de processamento duplicado com armazenamento de chaves com TTL
+- **Notificacoes Webhook**: Registro de endpoints, assinatura de eventos, rastreamento de entregas
+- **Gerenciamento de Metodos de Pagamento**: Registrar, desativar e listar metodos de pagamento
+- **Rastreamento de Estornos**: Estornos totais e parciais com validacao de saldo
+- **Gerenciamento de Status**: Fluxo completo (pendente, processando, aprovado, recusado, cancelado, estornado)
+
+### Como Executar
+
+```bash
+# Clonar o repositorio
+git clone https://github.com/galafis/azure-api-management-payments.git
+cd azure-api-management-payments
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Executar o demo
+python main.py
+
+# Executar os testes
+pytest tests/ -v
 ```
 
-## Insights e Aprendizados
+### Endpoints da API (Referencia)
 
-1. **API Gateway como ponto central**: O Azure API Management atua como unico ponto de entrada, simplificando seguranca e monitoramento
-2. **Politicas em XML**: Flexibilidade para transformar requests, aplicar rate limiting e validar tokens
-3. **Cabecalho Ocp-Apim-Subscription-Key**: Padrao da Microsoft para autenticacao de subscricoes
-4. **Log Stream**: Monitoramento em tempo real das requisicoes
-5. **Versionamento de APIs**: Suporte nativo para multiplas versoes da API
+```
+POST   /api/payments          - Processar pagamento
+GET    /api/payments/{id}     - Consultar transacao
+POST   /api/payments/{id}/refund - Estornar transacao
+POST   /api/payments/{id}/cancel - Cancelar transacao
+GET    /api/webhooks           - Listar endpoints webhook
+POST   /api/webhooks           - Registrar webhook
+```
 
-## Tecnologias
+### Tecnologias Utilizadas
 
-- Microsoft Azure API Management
-- Azure App Service
-- JWT (JSON Web Tokens)
-- REST API
-- Python/Node.js (Backend)
+| Tecnologia | Finalidade |
+|---|---|
+| Python 3.10+ | Linguagem principal |
+| pytest | Framework de testes |
+| Azure API Management | Gateway de API |
+| dataclasses | Modelos de dados |
 
-## Como Executar
+## Autor / Author
 
-1. Criar recurso Azure API Management no portal
-2. Configurar backend API no App Service
-3. Importar definicao da API (OpenAPI/Swagger)
-4. Configurar politicas de seguranca
-5. Testar via Portal do Desenvolvedor
-
-## Autor
-
-Projeto desenvolvido durante o bootcamp DIO Microsoft Azure Cloud Native 2026.
+**Gabriel Demetrios Lafis**
